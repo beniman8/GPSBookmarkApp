@@ -1,9 +1,11 @@
 import 'react-native-gesture-handler';
 import * as React from 'react';
-import {Button, View, Text, Alert, StyleSheet} from 'react-native';
+import {Button, View, Text, StyleSheet, TextInput} from 'react-native';
 import {createAppContainer} from 'react-navigation';
 import Geolocation from 'react-native-geolocation-service';
 import {createBottomTabNavigator} from 'react-navigation-tabs';
+
+let baseUrl = 'http://192.168.17.10:8000';
 
 class HomeScreen extends React.Component {
   constructor(props) {
@@ -11,8 +13,9 @@ class HomeScreen extends React.Component {
     this.savegps = this.savegps.bind(this);
     this.getBookmarkList = this.getBookmarkList.bind(this);
     this.createNewBookmark = this.createNewBookmark.bind(this);
-    this.baseUrl = 'http://192.168.17.10:8000';
-    this.sessionId = 'zwkb6rcl7hzh7ffv6ll8tmv6l7490sxj';
+    this.state = {
+      data: 'the data',
+    };
   }
   savegps() {
     // Instead of navigator.geolocation, just use Geolocation.
@@ -30,7 +33,7 @@ class HomeScreen extends React.Component {
   }
 
   async createNewBookmark(position) {
-    let url = this.baseUrl + '/bookmarks.json';
+    let url = baseUrl + '/bookmarks.json';
 
     try {
       const response = await fetch(url, {
@@ -38,25 +41,23 @@ class HomeScreen extends React.Component {
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
-          Cookie: 'sessionid=' + this.sessionId,
-          mode: 'cors',
         },
         body: JSON.stringify({
           lat: position.coords.latitude,
           lon: position.coords.longitude,
           alt: position.coords.altitude,
         }),
+        credentials: 'same-origin',
       });
 
       const responseJson = await response.json();
       console.log(responseJson);
-      Alert.alert('Gps Location is saved ');
     } catch (error) {
       console.error(error);
     }
   }
   async getBookmarkList() {
-    let url = this.baseUrl + '/bookmarks.json';
+    let url = baseUrl + '/bookmarks.json';
 
     try {
       const response = await fetch(url, {
@@ -64,8 +65,8 @@ class HomeScreen extends React.Component {
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
-          Cookie: 'sessionid =' + this.sessionId,
         },
+        credentials: 'same-origin',
       });
       const responseJson = await response.json();
       console.log(responseJson);
@@ -76,6 +77,7 @@ class HomeScreen extends React.Component {
   render() {
     return (
       <View style={styles.cent}>
+        <Text>{this.state.data}</Text>
         <Text>GPS LOCATION APP</Text>
         <Button title="Save Bookmark Location" onPress={() => this.savegps()} />
         <Button
@@ -88,25 +90,85 @@ class HomeScreen extends React.Component {
 }
 
 class LoginScreen extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      currentUsername: '',
+      password: '',
+      currentMessage: 'Not logged in',
+    };
+    this.login = this.login.bind(this);
+    this.logout = this.logout.bind(this);
+  }
+
+  login() {
+    this.setState({
+      currentMessage: 'Logging in...',
+    });
+
+    let url = baseUrl + '/login/';
+    let formData = new FormData();
+    formData.append('username', this.state.currentUsername);
+    formData.append('password', this.state.password);
+    fetch(url, {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin',
+    })
+      .then(response => {
+        console.log(response);
+        if (response.status === 200) {
+          this.setState({currentMessage: 'Currently logged in'});
+        } else if (response.status === 403) {
+          this.setState({currentMessage: 'Authentication error'});
+        } else {
+          this.setState({currentMessage: 'Server error try again later'});
+        }
+      })
+      .then(data => {})
+      .catch(err => {
+        console.log(err);
+      });
+  }
+
+  logout() {
+    this.setState({
+      currentMessage: 'Logged out',
+    });
+
+    let url = baseUrl + '/logout/';
+    fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+    })
+      .then(response => {
+        console.log(response);
+        if (response.status === 200) {
+          this.setState({currentMessage: 'Logged out '});
+        }
+      })
+      .then(data => {})
+      .catch(err => {
+        console.log(err);
+      });
+  }
+
   render() {
     return (
-      // <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-      //   <Text>Details Screen</Text>
-      //   <Button
-      //     title="Go to Details... again"
-      //     onPress={() => this.props.navigation.push('Details')}
-      //   />
-      //   <Button
-      //     title="Go to Home"
-      //     onPress={() => this.props.navigation.navigate('Home')}
-      //   />
-      //   <Button
-      //     title="Go back"
-      //     onPress={() => this.props.navigation.goBack()}
-      //   />
-      // </View>
       <View style={styles.cent}>
-        <Text>Login Screen</Text>
+        <Text>Enter Username:</Text>
+        <TextInput
+          placeholder="Username"
+          onChangeText={text => this.setState({currentUsername: text})}
+        />
+        <Text>Enter Password:</Text>
+        <TextInput
+          placeholder="Password"
+          onChangeText={text => this.setState({password: text})}
+        />
+        <Button title="Login" onPress={() => this.login()} />
+        <Button title="Logout" onPress={() => this.logout()} />
+        <Text>{this.state.currentMessage}</Text>
       </View>
     );
   }
@@ -121,8 +183,8 @@ const styles = StyleSheet.create({
 });
 
 const TabNavigator = createBottomTabNavigator({
-  Bookmark: HomeScreen,
   Login: LoginScreen,
+  Bookmark: HomeScreen,
 });
 
 export default createAppContainer(TabNavigator);
