@@ -2,8 +2,8 @@ import 'react-native-gesture-handler';
 import * as React from 'react';
 import {Button, View, Text, Alert, StyleSheet} from 'react-native';
 import {createAppContainer} from 'react-navigation';
-import {createStackNavigator} from 'react-navigation-stack';
 import Geolocation from 'react-native-geolocation-service';
+import {createBottomTabNavigator} from 'react-navigation-tabs';
 
 class HomeScreen extends React.Component {
   constructor(props) {
@@ -82,10 +82,6 @@ class HomeScreen extends React.Component {
           title="List all Bookmarks"
           onPress={() => this.getBookmarkList()}
         />
-        <Button
-          title="Go to Login"
-          onPress={() => this.props.navigation.navigate('Login')}
-        />
       </View>
     );
   }
@@ -111,10 +107,6 @@ class LoginScreen extends React.Component {
       // </View>
       <View style={styles.cent}>
         <Text>Login Screen</Text>
-        <Button
-          title="Go to Bookmarks"
-          onPress={() => this.props.navigation.navigate('Bookmark')}
-        />
       </View>
     );
   }
@@ -128,9 +120,9 @@ const styles = StyleSheet.create({
   },
 });
 
-const RootStack = createStackNavigator({
+const TabNavigator = createBottomTabNavigator({
   Bookmark: HomeScreen,
   Login: LoginScreen,
 });
 
-export default createAppContainer(RootStack);
+export default createAppContainer(TabNavigator);
